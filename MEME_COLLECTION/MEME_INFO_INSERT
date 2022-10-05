@@ -1,0 +1,4 @@
+USE WideWorldImportersDW;
+GO
+
+SELECT * FROM fact.Movement

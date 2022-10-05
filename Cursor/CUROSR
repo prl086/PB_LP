@@ -1,0 +1,94 @@
+USE WideWorldImportersDW;
+GO
+
+---------- prosty kursor
+
+
+DECLARE PROSTY CURSOR FAST_FORWARD
+
+FOR SELECT [Employee Key], Employee, [Preferred Name] FROM [Dimension].[Employee]
+
+OPEN PROSTY
+
+	FETCH NEXT FROM PROSTY
+
+	WHILE @@FETCH_STATUS=0
+
+	FETCH NEXT FROM PROSTY
+
+
+CLOSE PROSTY
+DEALLOCATE PROSTY -- kasuje powiązanie miedzy cursorem, a nazwą cursora
+
+
+-------- PRIOR // ABSOLUTE ---------
+
+USE WideWorldImportersDW;
+GO
+DECLARE Checker CURSOR SCROLL
+FOR SELECT [Employee Key], Employee, [Preferred Name] FROM [Dimension].[Employee]
+
+OPEN Checker
+
+	FETCH ABSOLUTE 15 FROM Checker
+
+	WHILE @@FETCH_STATUS=0
+
+		FETCH RELATIVE -5 FROM Checker
+
+CLOSE Checker
+DEALLOCATE Checker
+
+--------- drugi etap wywolanie procedury-------
+
+DECLARE @ID INT, 
+		@Employee NVARCHAR(256),
+		@NickName NVARCHAR(256)
+
+
+DECLARE Checker CURSOR SCROLL
+FOR SELECT [Employee Key], Employee, [Preferred Name] FROM [Dimension].[Employee]
+
+OPEN Checker
+
+	FETCH ABSOLUTE 25 FROM Checker INTO @ID, @Employee, @NickName
+
+	WHILE @@FETCH_STATUS=0
+	BEGIN
+		EXEC test.EMPLOOYEE_PROC @ID, @Employee, @NickName
+	
+		FETCH PRIOR FROM Checker INTO @ID, @Employee, @NickName
+	END	
+CLOSE Checker
+DEALLOCATE Checker
+
+
+--------- UPDATE poprzez CURSOR
+
+-- tworzę tabele na schemacie testowym
+
+SELECT *, 0 AS LICZBA_ZAPISOW INTO tst.EMPLOYEE_TST FROM [Dimension].[Employee]
+
+
+
+DECLARE @ID INT, 
+		@Employee NVARCHAR(256),
+		@NickName NVARCHAR(256),
+		@Zapis INT
+
+
+DECLARE Checker CURSOR SCROLL
+FOR SELECT [Employee Key], Employee, [Preferred Name] FROM tst.EMPLOYEE_TST
+FOR UPDATE OF LICZBA_ZAPISOW
+OPEN Checker
+
+	FETCH ABSOLUTE 25 FROM Checker INTO @ID, @Employee, @NickName
+
+	WHILE @@FETCH_STATUS=0
+	BEGIN
+		EXEC test.EMPLOOYEE_PROC @ID, @Employee, @NickName
+	
+		FETCH PRIOR FROM Checker INTO @ID, @Employee, @NickName
+	END	
+CLOSE Checker
+DEALLOCATE Checker
